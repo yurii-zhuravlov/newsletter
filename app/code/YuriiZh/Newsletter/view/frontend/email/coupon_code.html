@@ -1,4 +1,4 @@
-<!--@subject {{trans "Newsletter coupon code"}} @-->
+<!--@subject {{trans "Newsletter subscription success"}} @-->
 <!--@vars {
 "template config_path=\"design\/email\/footer_template\"":"Email Footer Template",
 "template config_path=\"design\/email\/header_template\"":"Email Header Template"
@@ -7,5 +7,24 @@
 {{template config_path="design/email/header_template"}}
 
 {{trans "You have been successfully subscribed to our newsletter."}}
+
+{{depend coupon_code}}
+<style>
+    .coupon-code {
+        display: inline-block;
+        padding: 5px 10px;
+        border-radius: 5px;
+        color: darkgreen;
+        font-weight: bold;
+        font-size: 24px;
+        background-color: lightgoldenrodyellow;
+    }
+</style>
+<div>
+    <span class="coupon-code">
+        {{trans "Your coupon code"}} : {{var coupon_code}}
+    </span>
+</div>
+{{/depend}}
 
 {{template config_path="design/email/footer_template"}}
