@@ -11,16 +11,18 @@ use Magento\Framework\Exception\NoSuchEntityException;
 use Magento\Framework\Mail\Template\TransportBuilder;
 use Magento\Framework\Translate\Inline\StateInterface;
 use Magento\Newsletter\Model\Subscriber;
+use Magento\Newsletter\Model\ResourceModel\Subscriber as SubscriberResourceModel;
 use Magento\Store\Model\ScopeInterface;
 use Magento\Store\Model\StoreManagerInterface;
-use Magento\Newsletter\Model\ResourceModel\Subscriber\CollectionFactory as SubscriberCollectionFactory;
 use YuriiZh\Newsletter\Service\GenerateCouponCodesService;
 use Magento\SalesRule\Model\ResourceModel\Rule\CollectionFactory as RuleCollectionFactory;
+use Exception;
 
 /**
  * Class Subscriber
  * @package YuriiZh\Newsletter\Plugin\Magento\Newsletter\Model
  * @SuppressWarnings(PHPMD.LongVariable)
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  */
 class SubscriberPlugin
 {
@@ -65,6 +67,9 @@ class SubscriberPlugin
      */
     protected $ruleCollectionFactory;
 
+    /** @var SubscriberResourceModel */
+    protected $subscriberResourceModel;
+
     /**
      * SubscriberPlugin constructor.
      * @param StateInterface $inlineTranslation
@@ -73,6 +78,7 @@ class SubscriberPlugin
      * @param ScopeConfigInterface $scopeConfig
      * @param GenerateCouponCodesService $generateCouponCodesService
      * @param RuleCollectionFactory $ruleCollectionFactory
+     * @param SubscriberResourceModel $subscriberResourceModel
      */
     public function __construct(
         StateInterface $inlineTranslation,
@@ -80,7 +86,8 @@ class SubscriberPlugin
         TransportBuilder $transportBuilder,
         ScopeConfigInterface $scopeConfig,
         GenerateCouponCodesService $generateCouponCodesService,
-        RuleCollectionFactory $ruleCollectionFactory
+        RuleCollectionFactory $ruleCollectionFactory,
+        SubscriberResourceModel $subscriberResourceModel
     ) {
         $this->inlineTranslation = $inlineTranslation;
         $this->storeManager = $storeManager;
@@ -88,6 +95,7 @@ class SubscriberPlugin
         $this->scopeConfig = $scopeConfig;
         $this->generateCouponCodesService = $generateCouponCodesService;
         $this->ruleCollectionFactory = $ruleCollectionFactory;
+        $this->subscriberResourceModel = $subscriberResourceModel;
     }
 
     /**
@@ -98,8 +106,9 @@ class SubscriberPlugin
      * @throws LocalizedException
      * @throws MailException
      * @throws NoSuchEntityException
+     * @throws Exception
      */
-    public function aroundSendConfirmationSuccessEmail(Subscriber $subject)
+    public function aroundSendConfirmationSuccessEmail(Subscriber $subject): self
     {
         $couponCode = null;
         if ($subject->getImportMode()) {
@@ -119,7 +128,7 @@ class SubscriberPlugin
         if ($subject->getIsCouponCodeSent() !== "1") {
             $couponCode = $this->generateCouponCode();
             $subject->setIsCouponCodeSent("1");
-            $subject->save();
+            $this->subscriberResourceModel->save($subject);
         }
 
         $this->inlineTranslation->suspend();
@@ -135,7 +144,7 @@ class SubscriberPlugin
                     'subscriber' => $subject,
                     'coupon_code' => $couponCode
                 ]
-            )->setFrom(
+            )->setFromByScope(
                 $this->scopeConfig->getValue(
                     Subscriber::XML_PATH_SUCCESS_EMAIL_IDENTITY,
                     ScopeInterface::SCOPE_STORE
@@ -162,7 +171,7 @@ class SubscriberPlugin
         $rule = $ruleCollection->getFirstItem();
         $params = ['length' => self::LENGTH, 'prefix' => self::PREFIX];
         $couponCodes = $this->generateCouponCodesService
-            ->execute(self::COUPON_CODES_QTY, (int)$rule->getRuleId(), $params);
+            ->execute(self::COUPON_CODES_QTY, (int) $rule->getRuleId(), $params);
         return reset($couponCodes);
     }
 }
