@@ -26,6 +26,7 @@ use Exception;
  */
 class SubscriberPlugin
 {
+    public const XML_PATH_COUPON_CODE = 'newsletter/subscription/coupon_code';
 
     public const COUPON_CODES_QTY = 1;
 
@@ -39,8 +40,6 @@ class SubscriberPlugin
     protected $inlineTranslation;
 
     /**
-     * Store manager
-     *
      * @var StoreManagerInterface
      */
     protected $storeManager;
@@ -51,8 +50,6 @@ class SubscriberPlugin
     protected $transportBuilder;
 
     /**
-     * Core store config
-     *
      * @var ScopeConfigInterface
      */
     protected $scopeConfig;
@@ -67,7 +64,9 @@ class SubscriberPlugin
      */
     protected $ruleCollectionFactory;
 
-    /** @var SubscriberResourceModel */
+    /**
+     * @var SubscriberResourceModel
+     */
     protected $subscriberResourceModel;
 
     /**
@@ -121,6 +120,9 @@ class SubscriberPlugin
         ) || !$this->scopeConfig->getValue(
             Subscriber::XML_PATH_SUCCESS_EMAIL_IDENTITY,
             ScopeInterface::SCOPE_STORE
+        ) || !$this->scopeConfig->getValue(
+            self::XML_PATH_COUPON_CODE,
+            ScopeInterface::SCOPE_STORE
         )) {
             return $this;
         }
@@ -133,26 +135,30 @@ class SubscriberPlugin
 
         $this->inlineTranslation->suspend();
 
-        $this->transportBuilder->setTemplateIdentifier('newsletter_subscription_coupon_code')
-            ->setTemplateOptions(
-                [
-                    'area' => Area::AREA_FRONTEND,
-                    'store' => $this->storeManager->getStore()->getId(),
-                ]
-            )->setTemplateVars(
-                [
-                    'subscriber' => $subject,
-                    'coupon_code' => $couponCode
-                ]
-            )->setFromByScope(
-                $this->scopeConfig->getValue(
-                    Subscriber::XML_PATH_SUCCESS_EMAIL_IDENTITY,
-                    ScopeInterface::SCOPE_STORE
-                )
-            )->addTo(
-                $subject->getEmail(),
-                $subject->getName()
-            );
+        $this->transportBuilder->setTemplateIdentifier(
+            $this->scopeConfig->getValue(
+                self::XML_PATH_COUPON_CODE,
+                ScopeInterface::SCOPE_STORE
+            )
+        )->setTemplateOptions(
+            [
+                'area' => Area::AREA_FRONTEND,
+                'store' => $this->storeManager->getStore()->getId(),
+            ]
+        )->setTemplateVars(
+            [
+                'subscriber' => $subject,
+                'coupon_code' => $couponCode
+            ]
+        )->setFromByScope(
+            $this->scopeConfig->getValue(
+                Subscriber::XML_PATH_SUCCESS_EMAIL_IDENTITY,
+                ScopeInterface::SCOPE_STORE
+            )
+        )->addTo(
+            $subject->getEmail(),
+            $subject->getName()
+        );
         $transport = $this->transportBuilder->getTransport();
         $transport->sendMessage();
 
