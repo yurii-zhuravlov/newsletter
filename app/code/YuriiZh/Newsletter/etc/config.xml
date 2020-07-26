@@ -1,0 +1,10 @@
+<?xml version="1.0"?>
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Store:etc/config.xsd">
+    <default>
+        <newsletter>
+            <subscription>
+                <coupon_code>newsletter_subscription_coupon_code</coupon_code>
+            </subscription>
+        </newsletter>
+    </default>
+</config>
